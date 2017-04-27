@@ -1,0 +1,79 @@
+body{
+  padding:0;
+  margin:0;
+  font-size:18px;
+  background-color:white;
+}
+
+.title{
+  font-size:4em;
+  text-align:center;
+  color:lightgreen;
+  font-weight:bold;
+}
+
+.gameDisplay{
+  margin-bottom:10px;
+}
+
+.controlDisplay{
+  border-radius:10px;
+  text-align:center;
+  padding:5px;
+}
+
+button{
+  margin:2px; 
+  width:80px;
+  background-color:white;
+  border:2px solid lightgreen;
+}
+
+button:hover{
+  background-color:white;
+}
+
+button:focus{
+  outline:none;
+}
+
+.generationDisplay{
+  font-size:23px;
+  margin-left:5px;
+}
+
+.generationCounter{
+  display:inline-block;
+  width:55px;
+  text-align:center;
+}
+
+.grid{
+  border:5px solid black;
+  border-radius:3px;
+  display:flex;
+  flex-wrap:wrap;
+  width:760px;
+  height:460px;
+  margin:auto;
+}
+
+.aliveCell, .deadCell{
+  display:inline-block;
+  width:15px;
+  height:15px;
+  box-sizing:border-box;
+  border:0.5px solid black;
+}
+
+.aliveCell{
+  background-color:rgb(95,231,95);
+}
+
+.footer{
+  border-radius:5px;
+  text-align:center;
+  width:80%;
+  margin:auto;
+}
+
