@@ -1,0 +1,310 @@
+//look at surrounding 8 neighbor cells, returns amount of alive neighbors
+//border cells have less than 8 neighbors
+function getAliveNeighbors(arr,i){
+  var numberOfRows = 30;
+  var numberOfColumns = 50;
+  //arrays to store cell indexs that are on left most column and right most column
+  var leftEdge = [];
+  var rightEdge = [];
+  var aliveNeighbors = 0;
+  //push in the indexes of left most column 
+  for(var f=0; f<numberOfRows*numberOfColumns; f+=numberOfColumns){
+    leftEdge.push(f);
+  }
+  //push in the indexes of right most column
+  for(var r=numberOfColumns-1; r<numberOfRows*numberOfColumns; r+=numberOfColumns){
+    rightEdge.push(r);
+  }
+  
+  //look at top-left neighbor, won't have top left neighbor if current cell is on left-most column or top row
+  if(i-numberOfColumns-1>=0 && !leftEdge.includes(i)){
+    if(arr[i-numberOfColumns-1].alive){
+      aliveNeighbors++;
+    }
+  }
+  
+  //look at top neighbor, won't have top neighbor if current cell is on top-most row
+  if(i-numberOfColumns>=0){
+    if(arr[i-numberOfColumns].alive){
+      aliveNeighbors++;
+    }
+  }
+
+  //look at top-right neighbor, won't have top right neighbor if current cell is on right-most column or top row
+  if(i-numberOfColumns+1>=0 && !rightEdge.includes(i)){
+    if(arr[i-numberOfColumns+1].alive){
+      aliveNeighbors++;
+    }
+  }
+  
+  //look at left neighbor, won't have left neighbor if current cell is on left-most column
+  if(!leftEdge.includes(i)){
+    if(arr[i-1].alive){
+      aliveNeighbors++;
+    }
+  }
+  
+  //look at right neighbor, won't have right neighbor if current cell is on right-most column
+  if(!rightEdge.includes(i)){
+    if(arr[i+1].alive){
+      aliveNeighbors++;
+    }
+  }
+  
+  //look at bottom-left neighbor, won't have bottom-left neighbor if current cell is on left-most column or lowest row
+  if(i+numberOfColumns-1<numberOfRows*numberOfColumns && !leftEdge.includes(i)){
+    if(arr[i+numberOfColumns-1].alive){
+      aliveNeighbors++;
+    }
+  }
+  
+  //look at bottom neighbor, won't have bottom neighbor if current cell is on lowest row
+  if(i+numberOfColumns<numberOfRows*numberOfColumns){
+    if(arr[i+numberOfColumns].alive){
+      aliveNeighbors++;
+    }
+  }
+  
+  //look at bottom-right neighbor, won't have bottom-right neighbor if current cell is on right-most column or lowest row
+  if(i+numberOfColumns+1<numberOfRows*numberOfColumns && !rightEdge.includes(i)){
+    if(arr[i+numberOfColumns+1].alive){
+      aliveNeighbors++;
+    }
+  }
+  
+  return aliveNeighbors;
+}
+
+//display function returning game message and creator credit
+function getFooter(){
+  return(
+    <div className='footer'>
+      Click on a cell to make it come alive<br/> 
+      Click <a href='https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life' target='_blank'>here</a> for more information on Game of Life<br/>
+      Created by BXR
+    </div>
+  )
+}
+
+//component, create a cell(one square) of a board(grid)
+class Cell extends React.Component{
+  constructor(){
+    super();
+    this.handleAliveness = this.handleAliveness.bind(this); 
+  }
+  
+  //when cell is clicked, handler function of changeAliveness
+  handleAliveness(){
+    this.props.changeAliveness(this.props.index, this.props.alive);
+  }
+  
+  //if passed in cellObj is alive render with aliveCell which have green background color
+  render(){
+    if(this.props.alive){
+      return(
+        <div className='aliveCell' onClick={this.handleAliveness}></div>
+      )  
+    }
+    else{
+      return(
+        <div className='deadCell' onClick={this.handleAliveness}></div>
+      )
+    }
+  }
+}
+
+//component, grid is composed of many cells
+class Grid extends React.Component{
+  constructor(){
+    super();
+    this.forEachCell = this.forEachCell.bind(this);
+  }
+  
+  //create cell component for each index of cellPopulation passed in
+  forEachCell(cell,i){
+    return(
+      <Cell index={i} alive={cell.alive} changeAliveness={this.props.changeAliveness}></Cell>
+    )
+  }
+  
+  render(){
+    return(
+      <div className='grid'>
+        {
+          this.props.cellPopulation.map(this.forEachCell)
+        }
+      </div>
+    )
+  }
+}
+
+//componenet, controlls initialization and running of the game
+class Game extends React.Component{
+  constructor(){
+    super();
+    //start with generation 0, and initialize cellPopulation
+    //cellPopulation will be an array containing objects with property of 'index', 'alive' and 'nextGenStatus'
+    this.state={
+      generation:0,
+      cellPopulation:this.initializeCells()
+    }
+    this.initializeCells = this.initializeCells.bind(this);
+    this.determineNextGenLife = this.determineNextGenLife.bind(this);
+    this.goToNextGen = this.goToNextGen.bind(this);
+    this.stopGame = this.stopGame.bind(this);
+    this.startGame = this.startGame.bind(this);
+    this.changeAliveness = this.changeAliveness.bind(this);
+    this.clearBoard = this.clearBoard.bind(this);
+  }
+
+  //returns an array of cellObj
+  //each cellObj have property 'index', 'alive' and 'nextGenStatus'
+  initializeCells(){
+    var cellArr = [];
+    for(var a=0; a<1500; a++){
+      var cellObj = {};
+      //randomly decide whether this cellObj will be alive or not
+      if((Math.floor(Math.random()*(2)))===1){
+        cellObj.alive = true;
+      }else{
+        cellObj.alive = false;
+      }
+      //nextGenStatus starts off as null
+      cellObj.nextGenStatus = null;
+      cellObj.index = a;
+      cellArr.push(cellObj);
+    }
+    return cellArr;
+  }
+  
+  //after components had mounted, start interval invoke of goToNextGen 
+  componentDidMount(){
+    this.timer = setInterval(this.goToNextGen,200);
+  }
+  
+  //updates the state generation and cellPopulation array
+  //generation will be increase by 1 each time
+  //cellPpulation will have each cellObj's property alive value set to its nextGenStatus value
+  goToNextGen(){
+    var newArr = this.determineNextGenLife(this.state.cellPopulation);
+    var tempArr = newArr;
+    for(var i = 0; i<tempArr.length; i++){
+      tempArr[i].alive = tempArr[i].nextGenStatus;
+    }
+    //update state for rendering
+    this.setState({
+      //some reason shorthand generation++ doesn't work
+      generation:this.state.generation + 1,
+      cellPopulation:tempArr
+    })
+  }
+  
+  //function used to determine each cell's next generation status
+  //will be passed in the current cellPopulation array
+  //returns updated array
+  determineNextGenLife(arr){
+    for(var i = 0; i<arr.length; i++){
+      //get the amount alive neighbors surrounding the current cellObj
+      var aliveNeighbors = getAliveNeighbors(arr,i);
+      if(arr[i].alive){
+        //if current cell is alive and have 2 or 3 alive neighbors
+        if(aliveNeighbors===2 || aliveNeighbors===3){
+          //current cell will stay alive in next generation
+          arr[i].nextGenStatus=true;
+        }
+        else{
+          arr[i].nextGenStatus=false;
+        }
+      }
+      else{
+        //if current cell is dead but have 3 alive neighbors
+        if(aliveNeighbors===3){
+          //it becomes alive in the next generation
+          arr[i].nextGenStatus=true;
+        }
+        else{
+          arr[i].nextGenStatus=false;
+        }
+      }
+    }
+    return arr;
+  }
+  
+  //start or continue the game by interval invoke of goToNextGen
+  startGame(){
+    this.timer = setInterval(this.goToNextGen,200);
+  }
+  
+  //function to clear away the interval invoke , thus stopping the grid rendering
+  stopGame(){
+    clearInterval(this.timer);
+  }
+  
+  //clear the board of alive cells,reset generation and game 
+  clearBoard(){
+    //stop interval call through timer
+    clearInterval(this.timer);
+    var arr = this.state.cellPopulation;
+    for(var a=0; a<arr.length; a++){
+      arr[a].alive = false;
+      arr[a].nextGenStatus = null;
+    }
+    this.setState({
+      generation:0,
+      cellPopulation:arr
+    });
+  }
+  
+  //when called, change the alive property of cellObj at passed in index of cellPopulation to opposite of what it is, update state to re-render
+  changeAliveness(index, aliveness){
+    var arr = this.state.cellPopulation;
+    arr[index].alive = !aliveness;
+    this.setState({
+      cellPopulation:arr
+    });
+  }
+  
+  //when component remove from DOM, remove the interval call
+  componentWillUnmount(){
+    clearInterval(this.timer);
+  }
+  
+  render(){
+    return(
+      <div className='gameDisplay'>
+        <div className='controlDisplay'>
+          <button onClick={this.startGame}>Start</button>
+          <button onClick={this.stopGame}>Stop</button>
+          <button onClick={this.goToNextGen}>Next</button>
+          <button onClick={this.clearBoard}>Clear</button>
+          <span className='generationDisplay'>
+            Generation: <div className='generationCounter'>{this.state.generation}</div>
+          </span>
+        </div>
+        {
+          <Grid cellPopulation={this.state.cellPopulation} changeAliveness={this.changeAliveness}></Grid> 
+        }
+      </div>
+    )
+  } 
+}
+
+//component to put together all the components for final display
+class App extends React.Component{
+  constructor(){
+    super();
+  }
+  render(){
+    return(
+      <div>
+        <div className='title'>Game of Life</div>
+        <Game></Game>
+        {getFooter()}
+      </div>
+    )
+  }
+}
+
+ReactDOM.render(
+  <App/>,document.getElementById('root')
+);
